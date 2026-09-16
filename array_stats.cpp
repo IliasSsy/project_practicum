@@ -6,22 +6,33 @@ const int SUCCESS = 0;
 const int ERROR = 1;
 
 int main () {
-    std::cout << "Enter integers" << std::endl;
-    int digit = 0;
-    std::vector<int> numbers;
-    while (std::cin >> digit) {
-        numbers.push_back(digit);
-    }
-    if (!(std::cin.eof())) {
+    std::cout << "Enter the number of elements N (N > 0): ";
+    int n = 0;
+    if (!(std::cin >> n) || n <= 0) {
         std::cout << "INVALID INPUT" << std::endl;
         return ERROR;
     }
-    long long result = 0;
+    std::cout << "Enter " << n << " integers:" << std::endl;
+    std::vector<int> numbers;
+    numbers.reserve(n);
+    for (int i = 0; i < n; i++) {
+        int digit = 0;
+        if (!(std::cin >> digit)) {
+            std::cout << "INVALID INPUT" << std::endl;
+            return ERROR;
+        }
+        numbers.push_back(digit);
+    }
+    long long sum = 0;
     int max = std::numeric_limits<int>::min();
     int min = std::numeric_limits<int>::max();
     for (int i = 0; i < numbers.size(); i++) {
-        if (numbers[i] > 0 && result > std::numeric_limits<long long>::max() - numbers[i]) {
-            std::cout << "Sum too mach overflowed long long type" << std::endl;
+        if (numbers[i] > 0 && sum > std::numeric_limits<long long>::max() - numbers[i]) {
+            std::cout << "Sum too much overflowed long long type" << std::endl;
+            return ERROR;
+        }
+        if (numbers[i] < 0 && sum < std::numeric_limits<long long>::min() - numbers[i]) {
+            std::cout << "Sum too much overflowed long long type" << std::endl;
             return ERROR;
         }
         if (numbers[i] < min) {
@@ -30,21 +41,12 @@ int main () {
         if (numbers[i] > max) {
             max = numbers[i];
         }
-        result += numbers[i];
+        sum += numbers[i];
     }
-    double arifmeticMean = 0.0f;
-    if (!(numbers.empty())) {
-        arifmeticMean = static_cast<double>(result) / numbers.size();
-    }
-    std::cout << "Sum is: " << result << std::endl;
-    std::cout << "Arifmetic mean is: " << arifmeticMean << std::endl;
-    if (!(numbers.empty())) {
-        std::cout << "Max integer is: " << max << std::endl;
-        std::cout << "Min integer is: " << min << std::endl;
-    } else {
-        std::cout << "Max integer: none"  << std::endl;
-        std::cout << "Min integer: none"  << std::endl;
-    }
-
+    float arithmeticMean = static_cast<float>(sum) / numbers.size();
+    std::cout << "Sum is: " << sum << std::endl;
+    std::cout << "Arifmetic mean is: " << arithmeticMean << std::endl;
+    std::cout << "Max integer is: " << max << std::endl;
+    std::cout << "Min integer is: " << min << std::endl;
     return SUCCESS;
 }
