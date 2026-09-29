@@ -15,5 +15,5 @@ int main() {
     }
     long long result = a + b + c;
     std::cout << "Сумма чисел: " << result << std::endl;
-
+    return SUCCESS;
 }
