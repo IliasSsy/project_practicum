@@ -1,0 +1,11 @@
+# ninja log v7
+4	61	1789545037792304642	build.ninja	3bf1749efa343635
+4	61	1789545037791847310	/Users/ilazukov/project_practicum/cmake-build-debug/cmake_install.cmake	3bf1749efa343635
+0	289	1789540120342944967	CMakeFiles/project_practicum.dir/main.cpp.o	a1b01456123e3ef3
+290	318	1789540120632703874	project_practicum	d74a43b0a6648467
+2	190	1789540180910656993	CMakeFiles/project_practicum.dir/hello.cpp.o	9b2affc1d8013f5a
+8	560	1790141963577896335	CMakeFiles/project_practicum.dir/sum_until_zero.cpp.o	6a2dbf3518794e2a
+7	561	1790141963577213124	CMakeFiles/project_practicum.dir/linear_equation.cpp.o	95e104298b79b809
+7	562	1790141963576850831	CMakeFiles/project_practicum.dir/abc.cpp.o	eea0b72d4cce24c9
+8	563	1790141963577500958	CMakeFiles/project_practicum.dir/square_equation.cpp.o	f116406dd76f23d1
+8	564	1790141963577754209	CMakeFiles/project_practicum.dir/array_stats.cpp.o	6aa130fc0b3b1b3c

@@ -1,0 +1,3 @@
+/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/project_practicum.dir
+/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/rebuild_cache.dir

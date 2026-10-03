@@ -1,0 +1,1 @@
+CMakeLists.txt not found in /Users/ilazukov/project_practicum Select CMakeLists.txt

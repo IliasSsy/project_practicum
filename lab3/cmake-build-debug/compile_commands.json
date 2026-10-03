@@ -1,0 +1,50 @@
+[
+{
+  "directory": "/Users/ilazukov/project_practicum/cmake-build-debug",
+  "command": "/usr/bin/c++ -g -arch arm64 -fcolor-diagnostics -o CMakeFiles/project_practicum.dir/main.cpp.o -c /Users/ilazukov/project_practicum/main.cpp",
+  "file": "/Users/ilazukov/project_practicum/main.cpp",
+  "output": "/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/project_practicum.dir/main.cpp.o"
+},
+{
+  "directory": "/Users/ilazukov/project_practicum/cmake-build-debug",
+  "command": "/usr/bin/c++ -g -arch arm64 -fcolor-diagnostics -o CMakeFiles/project_practicum.dir/hello.cpp.o -c /Users/ilazukov/project_practicum/hello.cpp",
+  "file": "/Users/ilazukov/project_practicum/hello.cpp",
+  "output": "/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/project_practicum.dir/hello.cpp.o"
+},
+{
+  "directory": "/Users/ilazukov/project_practicum/cmake-build-debug",
+  "command": "/usr/bin/c++ -g -arch arm64 -fcolor-diagnostics -o CMakeFiles/project_practicum.dir/hello_err.cpp.o -c /Users/ilazukov/project_practicum/hello_err.cpp",
+  "file": "/Users/ilazukov/project_practicum/hello_err.cpp",
+  "output": "/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/project_practicum.dir/hello_err.cpp.o"
+},
+{
+  "directory": "/Users/ilazukov/project_practicum/cmake-build-debug",
+  "command": "/usr/bin/c++ -g -arch arm64 -fcolor-diagnostics -o CMakeFiles/project_practicum.dir/abc.cpp.o -c /Users/ilazukov/project_practicum/abc.cpp",
+  "file": "/Users/ilazukov/project_practicum/abc.cpp",
+  "output": "/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/project_practicum.dir/abc.cpp.o"
+},
+{
+  "directory": "/Users/ilazukov/project_practicum/cmake-build-debug",
+  "command": "/usr/bin/c++ -g -arch arm64 -fcolor-diagnostics -o CMakeFiles/project_practicum.dir/linear_equation.cpp.o -c /Users/ilazukov/project_practicum/linear_equation.cpp",
+  "file": "/Users/ilazukov/project_practicum/linear_equation.cpp",
+  "output": "/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/project_practicum.dir/linear_equation.cpp.o"
+},
+{
+  "directory": "/Users/ilazukov/project_practicum/cmake-build-debug",
+  "command": "/usr/bin/c++ -g -arch arm64 -fcolor-diagnostics -o CMakeFiles/project_practicum.dir/square_equation.cpp.o -c /Users/ilazukov/project_practicum/square_equation.cpp",
+  "file": "/Users/ilazukov/project_practicum/square_equation.cpp",
+  "output": "/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/project_practicum.dir/square_equation.cpp.o"
+},
+{
+  "directory": "/Users/ilazukov/project_practicum/cmake-build-debug",
+  "command": "/usr/bin/c++ -g -arch arm64 -fcolor-diagnostics -o CMakeFiles/project_practicum.dir/array_stats.cpp.o -c /Users/ilazukov/project_practicum/array_stats.cpp",
+  "file": "/Users/ilazukov/project_practicum/array_stats.cpp",
+  "output": "/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/project_practicum.dir/array_stats.cpp.o"
+},
+{
+  "directory": "/Users/ilazukov/project_practicum/cmake-build-debug",
+  "command": "/usr/bin/c++ -g -arch arm64 -fcolor-diagnostics -o CMakeFiles/project_practicum.dir/sum_until_zero.cpp.o -c /Users/ilazukov/project_practicum/sum_until_zero.cpp",
+  "file": "/Users/ilazukov/project_practicum/sum_until_zero.cpp",
+  "output": "/Users/ilazukov/project_practicum/cmake-build-debug/CMakeFiles/project_practicum.dir/sum_until_zero.cpp.o"
+}
+]
