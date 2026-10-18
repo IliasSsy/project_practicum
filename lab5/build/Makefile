@@ -117,7 +117,7 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named game
+# Target rules for targets named Game
 
 # Build rule for target.
 game: cmake_check_build_system

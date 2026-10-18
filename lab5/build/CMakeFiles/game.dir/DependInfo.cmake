@@ -8,9 +8,9 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/ilazukov/project_practicum/lab5/src/Game/Game.cpp" "CMakeFiles/game.dir/src/Game/Game.cpp.o" "gcc" "CMakeFiles/game.dir/src/Game/Game.cpp.o.d"
-  "/Users/ilazukov/project_practicum/lab5/src/Player/Player.cpp" "CMakeFiles/game.dir/src/Player/Player.cpp.o" "gcc" "CMakeFiles/game.dir/src/Player/Player.cpp.o.d"
-  "/Users/ilazukov/project_practicum/lab5/src/main.cpp" "CMakeFiles/game.dir/src/main.cpp.o" "gcc" "CMakeFiles/game.dir/src/main.cpp.o.d"
+  "/Users/ilazukov/project_practicum/lab5/src/Game/Game.cpp" "CMakeFiles/Game.dir/src/Game/Game.cpp.o" "gcc" "CMakeFiles/Game.dir/src/Game/Game.cpp.o.d"
+  "/Users/ilazukov/project_practicum/lab5/src/Player/Player.cpp" "CMakeFiles/Game.dir/src/Player/Player.cpp.o" "gcc" "CMakeFiles/Game.dir/src/Player/Player.cpp.o.d"
+  "/Users/ilazukov/project_practicum/lab5/src/main.cpp" "CMakeFiles/Game.dir/src/main.cpp.o" "gcc" "CMakeFiles/Game.dir/src/main.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.
