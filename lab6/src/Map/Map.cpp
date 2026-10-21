@@ -23,37 +23,30 @@ void MapInit(Map& map) {
             std::cout << "Failed to load tileset.png" << std::endl;
         }
     }
-
     std::ifstream file("../assets/map.txt");
     if (!file.is_open()) {
         std::cout << "Failed to load map.txt" << std::endl;
         return;
     }
-
     map.width = 30;
     map.height = 17;
     map.grid.clear();
     std::string line;
-
     for (uint32_t row = 0; row < map.height; ++row) {
         if (!std::getline(file, line)) {
             std::cout << "Not enough rows in map file! Row count stops at: " << row << std::endl;
             return;
         }
-
         if (!line.empty() && line.back() == '\r') {
             line.pop_back();
         }
-
         if (line.size() != map.width) {
             std::cout << "Invalid map row width at row " << row
                       << " (Expected " << map.width << ", got " << line.size() << ")" << std::endl;
             return;
         }
-
         for (uint32_t col = 0; col < map.width; ++col) {
             char symbol = line[col];
-
             if (symbol == '0' || symbol == '.') {
                 map.grid.push_back(TileType::Empty);
             }
@@ -79,12 +72,10 @@ void MapInit(Map& map) {
 
 void mapDraw(sf::RenderWindow& window, const Map& map) {
     sf::Sprite tileSprite(map.tilesetTexture);
-
     for (uint32_t row = 0; row < map.height; ++row) {
         for (uint32_t col = 0; col < map.width; ++col) {
             uint32_t index = row * map.width + col;
             TileType currentTile = map.grid[index];
-
             if (currentTile == TileType::Empty) {
                 continue;
             }
@@ -100,11 +91,9 @@ void mapDraw(sf::RenderWindow& window, const Map& map) {
             else if (currentTile == TileType::Pipe) {
                 tileSprite.setTextureRect(sf::IntRect(TILE_SIZE * 8, 0, TILE_SIZE, TILE_SIZE));
             }
-
             float x = static_cast<float>(col * TILE_SIZE);
-            float y = static_cast<float>(row * TILE_SIZE);
+            float y = static_cast<float>(row * TILE_SIZE - 10.0f);
             tileSprite.setPosition({x, y});
-
             window.draw(tileSprite);
         }
     }
