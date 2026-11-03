@@ -17,19 +17,16 @@ TileType MapGetTile(const Map& map, float worldX, float worldY) {
 }
 
 void MapInit(Map& map) {
-    if (!map.tilesetTexture.loadFromFile("../assets/spritesheet.png")) {
-        std::cout << "Failed to load FirstLevelTextures.jpg" << std::endl;
-        if (!map.tilesetTexture.loadFromFile("../assets/tileset.png")) {
-            std::cout << "Failed to load tileset.png" << std::endl;
-        }
+    if (!map.tilesetTexture.loadFromFile("../assets/spritesheet.jpg")) {
+        std::cout << "Failed to load spritesheet.png" << std::endl;
     }
     std::ifstream file("../assets/map.txt");
     if (!file.is_open()) {
         std::cout << "Failed to load map.txt" << std::endl;
         return;
     }
-    map.width = 30;
-    map.height = 17;
+    map.width = 60;
+    map.height = 27;
     map.grid.clear();
     std::string line;
     for (uint32_t row = 0; row < map.height; ++row) {
@@ -56,6 +53,7 @@ void MapInit(Map& map) {
                 case 'P': map.grid.push_back(TileType::Pipe); break;
                 case 'S': map.grid.push_back(TileType::Spike); break;
                 case 'D': map.grid.push_back(TileType::Door); break;
+                default:  map.grid.push_back(TileType::Empty); break;
             }
         }
     }
@@ -84,7 +82,7 @@ void mapDraw(sf::RenderWindow& window, const Map& map) {
                     tileSprite.setTextureRect(sf::IntRect(TILE_SIZE * 8, 0, TILE_SIZE, TILE_SIZE));
                     break;
                 case TileType::Spike:
-                    tileSprite.setTextureRect(sf::IntRect(TILE_SIZE * 3, 0, TILE_SIZE, TILE_SIZE));
+                    tileSprite.setTextureRect(sf::IntRect(1354, 750, 150, 140));
                     break;
                 case TileType::Door:
                     tileSprite.setTextureRect(sf::IntRect(TILE_SIZE, TILE_SIZE * 11, TILE_SIZE, TILE_SIZE));
