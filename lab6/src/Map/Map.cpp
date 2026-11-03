@@ -47,24 +47,15 @@ void MapInit(Map& map) {
         }
         for (uint32_t col = 0; col < map.width; ++col) {
             char symbol = line[col];
-            if (symbol == '0' || symbol == '.') {
-                map.grid.push_back(TileType::Empty);
-            }
-            else if (symbol == 'F') {
-                map.grid.push_back(TileType::Floor);
-            }
-            else if (symbol == 'W') {
-                map.grid.push_back(TileType::WallMetal);
-            }
-            else if (symbol == 'C') {
-                map.grid.push_back(TileType::Ceiling);
-            }
-            else if (symbol == 'P') {
-                map.grid.push_back(TileType::Pipe);
-            }
-            else {
-                std::cout << "Invalid character in map file: '" << symbol << "' at row " << row << std::endl;
-                return;
+            switch (symbol) {
+                case '0':
+                case '.': map.grid.push_back(TileType::Empty); break;
+                case 'F': map.grid.push_back(TileType::Floor); break;
+                case 'W': map.grid.push_back(TileType::WallMetal); break;
+                case 'C': map.grid.push_back(TileType::Ceiling); break;
+                case 'P': map.grid.push_back(TileType::Pipe); break;
+                case 'S': map.grid.push_back(TileType::Spike); break;
+                case 'D': map.grid.push_back(TileType::Door); break;
             }
         }
     }
@@ -79,20 +70,28 @@ void mapDraw(sf::RenderWindow& window, const Map& map) {
             if (currentTile == TileType::Empty) {
                 continue;
             }
-            if (currentTile == TileType::WallMetal) {
-                tileSprite.setTextureRect(sf::IntRect(0, TILE_SIZE, TILE_SIZE, TILE_SIZE));
-            }
-            else if (currentTile == TileType::Floor) {
-                tileSprite.setTextureRect(sf::IntRect(0, TILE_SIZE * 4, TILE_SIZE, TILE_SIZE));
-            }
-            else if (currentTile == TileType::Ceiling) {
-                tileSprite.setTextureRect(sf::IntRect(TILE_SIZE * 2, 0, TILE_SIZE, TILE_SIZE));
-            }
-            else if (currentTile == TileType::Pipe) {
-                tileSprite.setTextureRect(sf::IntRect(TILE_SIZE * 8, 0, TILE_SIZE, TILE_SIZE));
+            switch (currentTile) {
+                case TileType::WallMetal:
+                    tileSprite.setTextureRect(sf::IntRect(0, TILE_SIZE, TILE_SIZE, TILE_SIZE));
+                    break;
+                case TileType::Floor:
+                    tileSprite.setTextureRect(sf::IntRect(0, TILE_SIZE * 4, TILE_SIZE, TILE_SIZE));
+                    break;
+                case TileType::Ceiling:
+                    tileSprite.setTextureRect(sf::IntRect(TILE_SIZE * 2, 0, TILE_SIZE, TILE_SIZE));
+                    break;
+                case TileType::Pipe:
+                    tileSprite.setTextureRect(sf::IntRect(TILE_SIZE * 8, 0, TILE_SIZE, TILE_SIZE));
+                    break;
+                case TileType::Spike:
+                    tileSprite.setTextureRect(sf::IntRect(TILE_SIZE * 3, 0, TILE_SIZE, TILE_SIZE));
+                    break;
+                case TileType::Door:
+                    tileSprite.setTextureRect(sf::IntRect(TILE_SIZE, TILE_SIZE * 11, TILE_SIZE, TILE_SIZE));
+                    break;
             }
             float x = static_cast<float>(col * TILE_SIZE);
-            float y = static_cast<float>(row * TILE_SIZE - 10.0f);
+            float y = static_cast<float>(row * TILE_SIZE);
             tileSprite.setPosition({x, y});
             window.draw(tileSprite);
         }

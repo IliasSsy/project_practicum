@@ -1,10 +1,11 @@
 #pragma once
 
 enum class TileType {
-    Empty,
-    Floor,
-    WallMetal,
-    Ceiling,
-    Pipe,
-    Door
+    Empty = '.',
+    Floor = 'F',
+    WallMetal = 'W',
+    Ceiling = 'C',
+    Pipe = 'P',
+    Spike = 'S',
+    Door = 'D',
 };

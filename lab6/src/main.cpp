@@ -1,7 +1,6 @@
-#include "game/Game.h"
-
+#include "Screens/App.h"
 int main() {
-    Game game;
-    game.Run();
+    App app;
+    app.Run();
     return 0;
 }

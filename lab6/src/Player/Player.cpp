@@ -30,29 +30,34 @@ Player::Player() {
     sprite.setTexture(texture);
     sprite.setScale(PLAYER_SCALE, PLAYER_SCALE);
     sf::FloatRect bounds = sprite.getLocalBounds();
-    sprite.setOrigin(bounds.width / 2.0f, bounds.height);
+    sprite.setOrigin(bounds.width / 2.0f, bounds.height - 150.0f);
     sprite.setPosition(200.0f, 100.0f);
 
+    hp = maxHp;
     velocity = {0.0f, 0.0f};
     isGrounded = false;
     touchingLeft = false;
     touchingRight = false;
+    isFinished = false;
 
-    if (!runBuffer.loadFromFile("../assets/music/run.mp3")) {
+    isRunLoaded = runBuffer.loadFromFile("../assets/music/run.mp3");
+    if (!isRunLoaded) {
         std::cout << "ERROR: Failed to load run.mp3" << std::endl;
     } else {
         runSound.setBuffer(runBuffer);
         runSound.setLoop(true);
     }
 
-    if (!fallBuffer.loadFromFile("../assets/music/fall.mp3")) {
+    isFallLoaded = fallBuffer.loadFromFile("../assets/music/fall.mp3");
+    if (!isFallLoaded) {
         std::cout << "ERROR: Failed to load fall.mp3" << std::endl;
     } else {
         fallSound.setBuffer(fallBuffer);
         fallSound.setLoop(true);
     }
 
-    if (!brakeBuffer.loadFromFile("../assets/music/brake.mp3")) {
+    isBrakeLoaded = brakeBuffer.loadFromFile("../assets/music/brake.mp3");
+    if (!isBrakeLoaded) {
         std::cout << "ERROR: Failed to load brake.mp3" << std::endl;
     } else {
         brakeSound.setBuffer(brakeBuffer);
@@ -68,11 +73,11 @@ void Player::HandleHorizontalMovement(float dt) {
 
     if (moveLeft && !moveRight) {
         velocity.x -= currentAcceleration * dt;
-        if (isGrounded && runSound.getStatus() != sf::Sound::Playing) runSound.play();
+        if (isGrounded && isRunLoaded && runSound.getStatus() != sf::Sound::Playing) runSound.play();
     }
     else if (moveRight && !moveLeft) {
         velocity.x += currentAcceleration * dt;
-        if (isGrounded && runSound.getStatus() != sf::Sound::Playing) runSound.play();
+        if (isGrounded && isRunLoaded && runSound.getStatus() != sf::Sound::Playing) runSound.play();
     }
     else if (isGrounded) {
         velocity.x *= FRICTION;
@@ -85,7 +90,6 @@ void Player::HandleHorizontalMovement(float dt) {
     if (!isGrounded) {
         runSound.pause();
     }
-
     velocity.x = std::clamp(velocity.x, -MAX_SPEED, MAX_SPEED);
 }
 
@@ -93,7 +97,6 @@ void Player::HandleVerticalMovement(float dt, bool jumpPressed) {
     if (isGrounded) {
         fallSound.pause();
         brakeSound.pause();
-
         if (jumpPressed) {
             velocity.y = JUMP_FORCE;
         }
@@ -104,9 +107,8 @@ void Player::HandleVerticalMovement(float dt, bool jumpPressed) {
         velocity.y += GRAVITY * 0.2f * dt;
         velocity.y = std::min(velocity.y, WALL_SLIDE_SPEED);
 
-        if (brakeSound.getStatus() != sf::Sound::Playing) brakeSound.play();
+        if (isBrakeLoaded && brakeSound.getStatus() != sf::Sound::Playing) brakeSound.play();
         fallSound.pause();
-
         if (jumpPressed) {
             velocity.y = JUMP_FORCE;
             if (touchingLeft) {
@@ -120,9 +122,8 @@ void Player::HandleVerticalMovement(float dt, bool jumpPressed) {
     else {
         velocity.y += GRAVITY * dt;
         brakeSound.pause();
-
         if (velocity.y > 50.0f) {
-            if (fallSound.getStatus() != sf::Sound::Playing) fallSound.play();
+            if (isFallLoaded && fallSound.getStatus() != sf::Sound::Playing) fallSound.play();
         } else {
             fallSound.pause();
         }
@@ -159,21 +160,34 @@ GridRange GetGridRange(const sf::FloatRect& box, const Map& map) {
 }
 
 void ResolveXCollisions(sf::Sprite& sprite, sf::Vector2f& velocity,
-                        bool& touchingLeft, bool& touchingRight, const Map& map, float dt) {
+                        bool& touchingLeft, bool& touchingRight,
+                        int& hp, bool& isFinished, const Map& map, float dt) {
     sprite.move(velocity.x * dt, 0.0f);
     sf::Vector2f pos = sprite.getPosition();
     touchingLeft = touchingRight = false;
-    sf::FloatRect box(pos.x - PLAYER_WIDTH / 2.f, pos.y - PLAYER_HEIGHT, PLAYER_WIDTH, PLAYER_HEIGHT);
-    GridRange r = GetGridRange(box, map);
+    float shrinkY = 2.0f;
+    sf::FloatRect box(pos.x - PLAYER_WIDTH / 2.0f, pos.y - PLAYER_HEIGHT + shrinkY, PLAYER_WIDTH, PLAYER_HEIGHT - shrinkY * 2.0f);
 
+    GridRange r = GetGridRange(box, map);
     for (int row = r.startRow; row <= r.endRow; ++row) {
         for (int col = r.startCol; col <= r.endCol; ++col) {
-            if (!IsTileSolid(map.grid[row * map.width + col])) continue;
+            TileType currentTile = map.grid[row * map.width + col];
+            if (!IsTileSolid(currentTile)) continue;
             sf::FloatRect tile(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
             if (!box.intersects(tile)) continue;
+            if (currentTile == TileType::Door) {
+                isFinished = true;
+                continue;
+            }
+            if (currentTile == TileType::Spike) {
+                hp -= 10;
+                velocity.x = (velocity.x > 0) ? -300.0f : 300.0f;
+                velocity.y = -400.0f;
+                continue;
+            }
 
             if (velocity.x > 0.0f) {
-                pos.x = tile.left - PLAYER_WIDTH / 2.f - EPSILON;
+                pos.x = tile.left - PLAYER_WIDTH / 2.0f - EPSILON;
                 touchingRight = true;
             } else if (velocity.x < 0.0f) {
                 pos.x = tile.left + tile.width + PLAYER_WIDTH / 2.f + EPSILON;
@@ -186,19 +200,28 @@ void ResolveXCollisions(sf::Sprite& sprite, sf::Vector2f& velocity,
 }
 
 void ResolveYCollisions(sf::Sprite& sprite, sf::Vector2f& velocity,
-                        bool& isGrounded, const Map& map, float dt) {
+                        bool& isGrounded, int& hp, bool& isFinished, const Map& map, float dt) {
     sprite.move(0.0f, velocity.y * dt);
     sf::Vector2f pos = sprite.getPosition();
     isGrounded = false;
-    sf::FloatRect box(pos.x - PLAYER_WIDTH / 2.f, pos.y - PLAYER_HEIGHT, PLAYER_WIDTH, PLAYER_HEIGHT + 1.0f);
+    float shrinkX = 2.0f;
+    sf::FloatRect box(pos.x - PLAYER_WIDTH / 2.0f + shrinkX, pos.y - PLAYER_HEIGHT, PLAYER_WIDTH - shrinkX * 2.0f, PLAYER_HEIGHT + 1.0f);
     GridRange r = GetGridRange(box, map);
-    r.endRow = std::min(static_cast<int>(map.height) - 1, static_cast<int>((box.top + box.height) / TILE_SIZE));
-
     for (int row = r.startRow; row <= r.endRow; ++row) {
         for (int col = r.startCol; col <= r.endCol; ++col) {
-            if (!IsTileSolid(map.grid[row * map.width + col])) continue;
+            TileType currentTile = map.grid[row * map.width + col];
+            if (!IsTileSolid(currentTile)) continue;
             sf::FloatRect tile(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
             if (!box.intersects(tile)) continue;
+
+            if (currentTile == TileType::Door) {
+                isFinished = true;
+            }
+            if (currentTile == TileType::Spike) {
+                hp -= 50;
+                velocity.y = -500.0f;
+                continue;
+            }
 
             if (velocity.y > 0.0f) {
                 pos.y = tile.top;
@@ -213,8 +236,21 @@ void ResolveYCollisions(sf::Sprite& sprite, sf::Vector2f& velocity,
 }
 
 void Player::ResolveCollisions(const Map& map, float dt) {
-    ResolveXCollisions(sprite, velocity, touchingLeft, touchingRight, map, dt);
-    ResolveYCollisions(sprite, velocity, isGrounded, map, dt);
+    ResolveXCollisions(sprite, velocity, touchingLeft, touchingRight, hp, isFinished, map, dt);
+    ResolveYCollisions(sprite, velocity, isGrounded, hp, isFinished, map, dt);
+}
+
+void Player::Reset() {
+    sprite.setPosition(200.0f, 100.0f);
+    hp = maxHp;
+    velocity = {0.0f, 0.0f};
+    isGrounded = false;
+    touchingLeft = false;
+    touchingRight = false;
+    isFinished = false;
+    runSound.stop();
+    fallSound.stop();
+    brakeSound.stop();
 }
 
 void Player::Draw(sf::RenderWindow& window) {

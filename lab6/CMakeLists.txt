@@ -13,6 +13,10 @@ add_executable(game
         ../lab6/src/Map/Map.cpp
         ../lab6/src/Levels/Level.cpp
         ../lab6/src/Game/Game.cpp
+        src/Screens/App.h
+        src/UI/Hud/Hud.h
+        src/Screens/App.cpp
+        src/UI/Hud/Hud.cpp
 )
 
 target_include_directories(game PRIVATE
