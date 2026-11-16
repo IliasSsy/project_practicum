@@ -9,3 +9,4 @@ struct Level {
     Level();
     void Draw(sf::RenderWindow& window);
 };
+

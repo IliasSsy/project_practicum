@@ -10,6 +10,9 @@ struct Map {
     uint32_t width = 0;
     uint32_t height = 0;
     sf::Texture tilesetTexture;
+
+    sf::Texture bgTexture;
+    sf::Sprite bgSprite;
 };
 
 void MapInit(Map& map);

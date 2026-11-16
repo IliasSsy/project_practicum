@@ -9,5 +9,7 @@ enum class TileType : char {
     Spike,
     Door,
     Laser,
-    Coin
+    Coin,
+    BreakableFloor,
+    Voice,
 };

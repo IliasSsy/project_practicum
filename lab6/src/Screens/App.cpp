@@ -97,10 +97,7 @@ void App::runGame() {
             currentState = ScreenState::GameWin;
         }
         sf::FloatRect playerBounds = player.sprite.getGlobalBounds();
-        sf::Vector2f targetCenter(
-            playerBounds.left + playerBounds.width / 2.0f,
-            playerBounds.top + playerBounds.height / 2.0f
-        );
+        sf::Vector2f targetCenter = player.sprite.getPosition();
         float halfWidth = view.getSize().x / 2.0f;
         float halfHeight = view.getSize().y / 2.0f;
         float mapWidth = level.map.width * TILE_SIZE;
@@ -117,7 +114,7 @@ void App::runGame() {
         } else {
             clampedY = mapHeight / 2.0f;
         }
-        view.setCenter(clampedX, clampedY);
+        view.setCenter(std::round(clampedX), std::round(clampedY));
         window.clear(sf::Color::Black);
         window.setView(view);
         level.Draw(window);
