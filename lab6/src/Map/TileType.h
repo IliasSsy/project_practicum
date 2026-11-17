@@ -12,4 +12,5 @@ enum class TileType : char {
     Coin,
     BreakableFloor,
     Voice,
+    Clock
 };

@@ -5,11 +5,12 @@
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <algorithm>
+#include <SFML/Audio.hpp>
 
 const std::string FONT_PATH = "/System/Library/Fonts/Helvetica.ttc";
-constexpr unsigned int FRAMERATE = 60;
-constexpr float ZOOM_LEVEL = 0.9f;
-constexpr float TIME_STEP = 1.0f / 60.0f;
+const unsigned int FRAMERATE = 60;
+const float ZOOM_LEVEL = 0.9f;
+const float TIME_STEP = 1.0f / 60.0f;
 const std::string MENU_BG_PATH = "../assets/main_menu.jpg";
 const std::string MENU_BUTTONS_PATH = "../assets/menu_buttons.png";
 const sf::IntRect MENU_PLAY_IDLE(108, 212, 1050, 600);
@@ -17,22 +18,21 @@ const sf::IntRect MENU_PLAY_HOVER(1258, 195, 1050, 800);
 const sf::IntRect MENU_EXIT_IDLE(108, 1060, 1050, 600);
 const sf::IntRect MENU_EXIT_HOVER(1258, 1060, 1050, 800);
 const sf::Vector2f MENU_BTN_SIZE(350.0f, 150.0f);
-constexpr float MENU_CENTER_OFFSET_X = 175.0f;
-constexpr float MENU_BTN_OFFSET_Y = 80.0f;
+const float MENU_CENTER_OFFSET_X = 175.0f;
+const float MENU_BTN_OFFSET_Y = 80.0f;
 const sf::Color MENU_BG_COLOR(30, 30, 40);
 const std::string PAUSE_BUTTONS_PATH = "../assets/pause_buttons.png";
 const std::string PAUSE_PANEL_PATH = "../assets/pause_screen.png";
-constexpr float PAUSE_PANEL_SCALE = 0.6f;
+const float PAUSE_PANEL_SCALE = 0.6f;
 const sf::IntRect PAUSE_RESUME_IDLE(108, 212, 1050, 600);
 const sf::IntRect PAUSE_RESUME_HOVER(1258, 195, 1050, 800);
 const sf::IntRect PAUSE_MENU_IDLE(108, 1060, 1050, 600);
 const sf::IntRect PAUSE_MENU_HOVER(1258, 1060, 1050, 800);
 const sf::Vector2f PAUSE_BTN_SIZE(400.0f, 150.0f);
-constexpr float PAUSE_CENTER_OFFSET_X = 200.0f;
-constexpr float PAUSE_RESUME_OFFSET_Y = 110.0f;
-constexpr float PAUSE_MENU_OFFSET_Y = 70.0f;
+const float PAUSE_CENTER_OFFSET_X = 200.0f;
+const float PAUSE_RESUME_OFFSET_Y = 110.0f;
+const float PAUSE_MENU_OFFSET_Y = 70.0f;
 const sf::Color PAUSE_OVERLAY_COLOR(0, 0, 0, 160);
-
 
 App::App() {
     if (!menuFont.loadFromFile(FONT_PATH)) {
@@ -76,6 +76,30 @@ void App::Run() {
 }
 
 void App::runGame() {
+    levelClock.restart();
+    sf::Music gameMusic;
+    if (gameMusic.openFromFile("../assets/music/game.mp3")) {
+        gameMusic.setLoop(true);
+        gameMusic.setVolume(15.0f);
+        gameMusic.play();
+    } else {
+        std::cout << "ERROR: Failed to load game music" << std::endl;
+    }
+    sf::SoundBuffer dataPadBuffer;
+    sf::Sound dataPadSound;
+    if (dataPadBuffer.loadFromFile("../assets/music/data-pad.mp3")) {
+        dataPadSound.setBuffer(dataPadBuffer);
+        dataPadSound.setVolume(50.0f);
+    } else {
+        std::cout << "ERROR: Failed to load data-pad.mp3" << std::endl;
+    }
+
+    sf::Text voicePromptText;
+    voicePromptText.setFont(menuFont);
+    voicePromptText.setCharacterSize(18);
+    voicePromptText.setFillColor(sf::Color::Green);
+    voicePromptText.setString("Press Enter to Read");
+
     while (window.isOpen() && currentState == ScreenState::Game) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -96,29 +120,61 @@ void App::runGame() {
         if (player.isFinished) {
             currentState = ScreenState::GameWin;
         }
-        sf::FloatRect playerBounds = player.sprite.getGlobalBounds();
         sf::Vector2f targetCenter = player.sprite.getPosition();
         float halfWidth = view.getSize().x / 2.0f;
         float halfHeight = view.getSize().y / 2.0f;
         float mapWidth = level.map.width * TILE_SIZE;
         float mapHeight = level.map.height * TILE_SIZE;
-        float clampedX;
-        float clampedY;
-        if (mapWidth >= view.getSize().x) {
-            clampedX = std::clamp(targetCenter.x, halfWidth, mapWidth - halfWidth);
-        } else {
-            clampedX = mapWidth / 2.0f;
-        }
-        if (mapHeight >= view.getSize().y) {
-            clampedY = std::clamp(targetCenter.y, halfHeight, mapHeight - halfHeight);
-        } else {
-            clampedY = mapHeight / 2.0f;
-        }
+
+        float clampedX = (mapWidth >= view.getSize().x) ? std::clamp(targetCenter.x, halfWidth, mapWidth - halfWidth) : mapWidth / 2.0f;
+        float clampedY = (mapHeight >= view.getSize().y) ? std::clamp(targetCenter.y, halfHeight, mapHeight - halfHeight) : mapHeight / 2.0f;
+
         view.setCenter(std::round(clampedX), std::round(clampedY));
+
         window.clear(sf::Color::Black);
         window.setView(view);
         level.Draw(window);
         player.Draw(window);
+
+        float elapsedTime = levelClock.getElapsedTime().asSeconds();
+        int totalSeconds = static_cast<int>(elapsedTime);
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+
+        char timeBuffer[16];
+        if (minutes >= 100) {
+            std::snprintf(timeBuffer, sizeof(timeBuffer), "99:99");
+        } else {
+            std::snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d", minutes, seconds);
+        }
+
+        sf::Text worldClockText;
+        worldClockText.setFont(menuFont);
+        worldClockText.setCharacterSize(10);
+        worldClockText.setFillColor(sf::Color(255, 50, 40, 230));
+        worldClockText.setString(timeBuffer);
+
+        for (const auto& clockPos : level.map.clockPositions) {
+            float screenX = clockPos.x * TILE_SIZE + 11.f;
+            float screenY = clockPos.y * TILE_SIZE + 15.f;
+
+            worldClockText.setPosition(screenX, screenY);
+            window.draw(worldClockText);
+        }
+
+        if (player.IsNearVoice(level.map)) {
+            sf::Vector2f pPos = player.sprite.getPosition();
+            voicePromptText.setPosition(pPos.x - 45.0f, pPos.y - 75.0f);
+            window.draw(voicePromptText);
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
+                if (player.TryPickupVoice(level.map)) {
+                    std::cout << "Служебный рапорт успешно прочитан!" << std::endl;
+                    dataPadSound.play(); // Звук подбора дата-пада
+                }
+            }
+        }
+
         hud.Draw(window);
         window.display();
     }
@@ -134,25 +190,42 @@ void App::runMenu() {
         static_cast<float>(window.getSize().x) / bgTexture.getSize().x,
         static_cast<float>(window.getSize().y) / bgTexture.getSize().y
     );
+
+    // Фоновая музыка главного меню
+    sf::Music menuMusic;
+    if (menuMusic.openFromFile("../assets/music/main_music.mp3")) {
+        menuMusic.setLoop(true);
+        menuMusic.play();
+    } else {
+        std::cout << "ERROR: Failed to load menu music" << std::endl;
+    }
+
     sf::Texture buttonsSheet;
     if (!buttonsSheet.loadFromFile(MENU_BUTTONS_PATH)) {
         std::cout << "Failed to load menu_buttons.png" << std::endl;
     }
+
     sf::Text tutorialText(L"Управление:\n< ^ v > - Движение\nЛКМ - Атака\nESC - Пауза", menuFont, 30);
     tutorialText.setFillColor(sf::Color(255, 255, 255, 200));
     tutorialText.setPosition(30.0f, window.getSize().y - 150.0f);
+
     float centerX = window.getSize().x / 2.0f - MENU_CENTER_OFFSET_X;
     float centerY = window.getSize().y / 2.0f;
+
     sf::IntRect playIdleRect = MENU_PLAY_IDLE;
     sf::IntRect playHoverRect = MENU_PLAY_HOVER;
     sf::IntRect exitIdleRect = MENU_EXIT_IDLE;
     sf::IntRect exitHoverRect = MENU_EXIT_HOVER;
+
     Button playBtn(buttonsSheet, playIdleRect, playHoverRect, MENU_BTN_SIZE, {centerX, centerY - MENU_BTN_OFFSET_Y});
     Button exitBtn(buttonsSheet, exitIdleRect, exitHoverRect, MENU_BTN_SIZE, {centerX, centerY + MENU_BTN_OFFSET_Y});
+
     while (window.isOpen() && currentState == ScreenState::Menu) {
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) currentState = ScreenState::Exit;
+            if (event.type == sf::Event::Closed) {
+                currentState = ScreenState::Exit;
+            }
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
                 currentState = ScreenState::Game;
             }
@@ -191,16 +264,21 @@ void App::runPause() {
     pausePanel.setOrigin(panelBounds.width / 2.0f, panelBounds.height / 2.0f);
     pausePanel.setPosition(window.getSize().x / 2.0f, window.getSize().y / 2.0f);
     pausePanel.setScale(PAUSE_PANEL_SCALE, PAUSE_PANEL_SCALE);
+
     sf::IntRect resumeIdleRect = PAUSE_RESUME_IDLE;
     sf::IntRect resumeHoverRect = PAUSE_RESUME_HOVER;
     sf::IntRect menuIdleRect = PAUSE_MENU_IDLE;
     sf::IntRect menuHoverRect = PAUSE_MENU_HOVER;
+
     float centerX = window.getSize().x / 2.0f - PAUSE_CENTER_OFFSET_X;
     float centerY = window.getSize().y / 2.0f;
+
     Button resumeBtn(pauseButtonsSheet, resumeIdleRect, resumeHoverRect, PAUSE_BTN_SIZE, {centerX, centerY - PAUSE_RESUME_OFFSET_Y});
     Button menuBtn(pauseButtonsSheet, menuIdleRect, menuHoverRect, PAUSE_BTN_SIZE, {centerX, centerY + PAUSE_MENU_OFFSET_Y});
+
     sf::RectangleShape darkOverlay(sf::Vector2f(window.getSize().x, window.getSize().y));
     darkOverlay.setFillColor(PAUSE_OVERLAY_COLOR);
+
     while (window.isOpen() && currentState == ScreenState::Pause) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -243,6 +321,15 @@ void App::runGameOver() {
         static_cast<float>(window.getSize().x) / loseTexture.getSize().x,
         static_cast<float>(window.getSize().y) / loseTexture.getSize().y
     );
+
+    sf::Music loseMusic;
+    if (loseMusic.openFromFile("../assets/music/death.mp3")) {
+        loseMusic.setVolume(50.0f);
+        loseMusic.play();
+    } else {
+        std::cout << "ERROR: Failed to load death music" << std::endl;
+    }
+
     while (window.isOpen() && currentState == ScreenState::GameOver) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -271,6 +358,15 @@ void App::runGameWin() {
         static_cast<float>(window.getSize().x) / winTexture.getSize().x,
         static_cast<float>(window.getSize().y) / winTexture.getSize().y
     );
+
+    sf::Music winMusic;
+    if (winMusic.openFromFile("../assets/music/win.mp3")) {
+        winMusic.setVolume(50.0f);
+        winMusic.play();
+    } else {
+        std::cout << "ERROR: Failed to load win music" << std::endl;
+    }
+
     while (window.isOpen() && currentState == ScreenState::GameWin) {
         sf::Event event;
         while (window.pollEvent(event)) {

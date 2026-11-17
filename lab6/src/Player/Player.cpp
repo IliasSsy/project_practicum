@@ -23,7 +23,7 @@ struct GridRange {
 };
 
 bool IsTileSolid(TileType type) {
-    return type != TileType::Empty && type != TileType::Voice;
+    return type != TileType::Empty && type != TileType::Voice && type != TileType::Clock;
 }
 
 Player::Player(sf::Vector2f startPos)
@@ -89,7 +89,6 @@ Player::Player(sf::Vector2f startPos)
     isFallLoaded = fallBuffer.loadFromFile("../assets/music/fall.mp3");
     if (isFallLoaded) {
         fallSound.setBuffer(fallBuffer);
-        fallSound.setLoop(true);
     } else {
         std::cout << "ERROR: Failed to load fall.mp3" << std::endl;
     }
@@ -97,7 +96,6 @@ Player::Player(sf::Vector2f startPos)
     isBrakeLoaded = brakeBuffer.loadFromFile("../assets/music/brake.mp3");
     if (isBrakeLoaded) {
         brakeSound.setBuffer(brakeBuffer);
-        brakeSound.setLoop(true);
     } else {
         std::cout << "ERROR: Failed to load brake.mp3" << std::endl;
     }
@@ -106,9 +104,7 @@ Player::Player(sf::Vector2f startPos)
 void Player::HandleHorizontalMovement(float dt) {
     bool moveLeft = sf::Keyboard::isKeyPressed(sf::Keyboard::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::A);
     bool moveRight = sf::Keyboard::isKeyPressed(sf::Keyboard::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::D);
-
     float acceleration = isGrounded ? ACCELERATION : ACCELERATION * 0.5f;
-
     if (moveLeft && !moveRight) {
         velocity.x -= acceleration * dt;
     }
@@ -135,23 +131,20 @@ void Player::HandleHorizontalMovement(float dt) {
 
 void Player::HandleVerticalMovement(float dt, bool jumpPressed) {
     if (isGrounded) {
-        fallSound.pause();
-        brakeSound.pause();
+        brakeSound.stop();
         if (jumpPressed) {
             velocity.y = JUMP_FORCE;
             isGrounded = false;
         }
         return;
     }
-
     if ((touchingLeft || touchingRight) && velocity.y > 0.0f) {
-        velocity.y += GRAVITY * 0.2f * dt;
+        velocity.y += GRAVITY * -0.2f * dt;
         velocity.y = std::min(velocity.y, WALL_SLIDE_SPEED);
 
         if (isBrakeLoaded && brakeSound.getStatus() != sf::Sound::Playing) {
             brakeSound.play();
         }
-        fallSound.pause();
 
         if (jumpPressed) {
             velocity.y = JUMP_FORCE;
@@ -165,14 +158,7 @@ void Player::HandleVerticalMovement(float dt, bool jumpPressed) {
     }
     else {
         velocity.y += GRAVITY * dt;
-        brakeSound.pause();
-        if (velocity.y > 50.0f) {
-            if (isFallLoaded && fallSound.getStatus() != sf::Sound::Playing) {
-                fallSound.play();
-            }
-        } else {
-            fallSound.pause();
-        }
+        brakeSound.stop();
     }
 }
 
@@ -211,14 +197,12 @@ void Player::Update(float dt) {
     }
     else {
         bool wasRunning = (lastActiveRects == &runRects);
-
         if (!wasRunning && speed >= RUN_START_SPEED) {
             wasRunning = true;
         }
         else if (wasRunning && speed <= RUN_STOP_SPEED) {
             wasRunning = false;
         }
-
         if (wasRunning && !runRects.empty()) {
             activeRects = &runRects;
             frameDuration = 0.09f;
@@ -260,7 +244,6 @@ void Player::Update(float dt) {
         while (animTimer >= frameDuration) {
             animTimer -= frameDuration;
             currentFrame++;
-
             if (currentFrame >= static_cast<int>(activeRects->size())) {
                 if (loopAnimation) {
                     currentFrame = 0;
@@ -422,7 +405,7 @@ void ResolveYCollisions(sf::Sprite& sprite, sf::Vector2f& velocity, bool& isGrou
         for (int row = probeRange.startRow; row <= probeRange.endRow; ++row) {
             for (int col = probeRange.startCol; col <= probeRange.endCol; ++col) {
                 TileType tileType = map.grid[row * map.width + col];
-                if (tileType == TileType::Empty || tileType == TileType::Spike || tileType == TileType::Door) {
+                if (!IsTileSolid(tileType)) {
                     continue;
                 }
 
@@ -441,8 +424,16 @@ void ResolveYCollisions(sf::Sprite& sprite, sf::Vector2f& velocity, bool& isGrou
 }
 
 void Player::ResolveCollisions(const Map& map, float dt) {
+    bool wasGrounded = isGrounded;
+
     ResolveXCollisions(sprite, velocity, touchingLeft, touchingRight, hp, isFinished, map, dt);
     ResolveYCollisions(sprite, velocity, isGrounded, hp, isFinished, map, dt);
+
+    if (!wasGrounded && isGrounded) {
+        if (isFallLoaded) {
+            fallSound.play();
+        }
+    }
 }
 
 bool Player::IsNearVoice(const Map& map) const {

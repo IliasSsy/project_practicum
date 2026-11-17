@@ -40,17 +40,23 @@ void MapInit(Map& map) {
         std::cout << "Failed to load background.jpg\n";
     }
     map.bgSprite.setTexture(map.bgTexture);
+
     float bgScaleX = static_cast<float>(60 * TILE_SIZE) / map.bgTexture.getSize().x;
     float bgScaleY = static_cast<float>(26 * TILE_SIZE) / map.bgTexture.getSize().y;
     map.bgSprite.setScale(bgScaleX, bgScaleY);
+
     std::ifstream file("../assets/map.txt");
     if (!file.is_open()) {
         std::cout << "Failed to load map.txt\n";
         return;
     }
+
     map.width = 60;
     map.height = 26;
     map.grid.clear();
+    map.voiceLogs.clear();
+    map.clockPositions.clear();
+
     std::string line;
     for (uint32_t row = 0; row < map.height; ++row) {
         if (!std::getline(file, line)) {
@@ -77,6 +83,10 @@ void MapInit(Map& map) {
                 case 'D': map.grid.push_back(TileType::Door); break;
                 case 'B': map.grid.push_back(TileType::BreakableFloor); break;
                 case 'V': map.grid.push_back(TileType::Voice); break;
+                case 'T':
+                    map.grid.push_back(TileType::Clock);
+                    map.clockPositions.push_back({static_cast<float>(col), static_cast<float>(row)});
+                    break;
                 default:  map.grid.push_back(TileType::Empty); break;
             }
         }
@@ -87,6 +97,7 @@ void mapDraw(sf::RenderWindow& window, const Map& map) {
     window.draw(map.bgSprite);
     sf::Sprite tileSprite(map.tilesetTexture);
     tileSprite.setOrigin(0.0f, 0.0f);
+
     for (uint32_t row = 0; row < map.height; ++row) {
         for (uint32_t col = 0; col < map.width; ++col) {
             uint32_t index = row * map.width + col;
@@ -94,6 +105,7 @@ void mapDraw(sf::RenderWindow& window, const Map& map) {
             if (currentTile == TileType::Empty) {
                 continue;
             }
+
             sf::IntRect textureRect;
             switch (currentTile) {
                 case TileType::WallMetal:
@@ -119,6 +131,9 @@ void mapDraw(sf::RenderWindow& window, const Map& map) {
                     break;
                 case TileType::Voice:
                     textureRect = sf::IntRect(1810, 1940, 50, 97);
+                    break;
+                case TileType::Clock:
+                    textureRect = sf::IntRect(1742, 185, 144, 112);
                     break;
                 default:
                     continue;

@@ -3,7 +3,6 @@
 #include "../Player/Player.h"
 #include "../Levels/Level.h"
 #include "../UI/Hud/Hud.h"
-#include "../UI/Button/Button.h"
 
 enum class ScreenState {
     Menu,
@@ -15,13 +14,15 @@ enum class ScreenState {
 };
 
 struct App {
-    sf::RenderWindow window{sf::VideoMode(2560, 1664), "007 Prison"};
+    sf::RenderWindow window{sf::VideoMode(2560, 1664), "017 Prison"};
     HUD hud;
     Player player;
     Level level;
     sf::Clock clock;
     sf::View view;
     sf::Font menuFont;
+
+    sf::Clock levelClock;
 
     ScreenState currentState{ScreenState::Menu};
 

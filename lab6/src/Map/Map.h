@@ -1,9 +1,18 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <string>
 #include "TileType.h"
 
 constexpr uint32_t TILE_SIZE = 50;
+
+struct VoiceLogData {
+    uint32_t col;
+    uint32_t row;
+    std::string title;
+    std::string content;
+    bool isCollected = false;
+};
 
 struct Map {
     std::vector<TileType> grid;
@@ -13,11 +22,12 @@ struct Map {
 
     sf::Texture bgTexture;
     sf::Sprite bgSprite;
+
+    std::vector<VoiceLogData> voiceLogs;
+    std::vector<sf::Vector2f> clockPositions;
 };
 
 void MapInit(Map& map);
 TileType MapGetTile(const Map& map, float worldX, float worldY);
 bool MapIsSolid(const Map& map, float worldX, float worldY);
 void mapDraw(sf::RenderWindow& window, const Map& map);
-
-
