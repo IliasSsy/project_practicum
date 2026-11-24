@@ -5,12 +5,13 @@
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <algorithm>
-#include <SFML/Audio.hpp>
+#include <cstdio>
 
 const std::string FONT_PATH = "/System/Library/Fonts/Helvetica.ttc";
 const unsigned int FRAMERATE = 60;
 const float ZOOM_LEVEL = 0.9f;
 const float TIME_STEP = 1.0f / 60.0f;
+
 const std::string MENU_BG_PATH = "../assets/main_menu.jpg";
 const std::string MENU_BUTTONS_PATH = "../assets/menu_buttons.png";
 const sf::IntRect MENU_PLAY_IDLE(108, 212, 1050, 600);
@@ -21,6 +22,7 @@ const sf::Vector2f MENU_BTN_SIZE(350.0f, 150.0f);
 const float MENU_CENTER_OFFSET_X = 175.0f;
 const float MENU_BTN_OFFSET_Y = 80.0f;
 const sf::Color MENU_BG_COLOR(30, 30, 40);
+
 const std::string PAUSE_BUTTONS_PATH = "../assets/pause_buttons.png";
 const std::string PAUSE_PANEL_PATH = "../assets/pause_screen.png";
 const float PAUSE_PANEL_SCALE = 0.6f;
@@ -44,347 +46,317 @@ App::App() {
         static_cast<float>(window.getSize().y)
     );
     view.zoom(ZOOM_LEVEL);
-    view.setCenter(
-        window.getSize().x / 2.0f,
-        window.getSize().y / 2.0f
-    );
+    view.setCenter(window.getSize().x / 2.0f, window.getSize().y / 2.0f);
 }
 
 void App::Run() {
     while (window.isOpen() && currentState != ScreenState::Exit) {
         switch (currentState) {
             case ScreenState::Menu:
-                runMenu();
+                RunMenu();
                 break;
             case ScreenState::Game:
-                runGame();
+                RunGame();
                 break;
             case ScreenState::Pause:
-                runPause();
+                RunPause();
                 break;
             case ScreenState::GameOver:
-                runGameOver();
+                RunGameOver();
                 break;
             case ScreenState::GameWin:
-                runGameWin();
+                RunGameWin();
                 break;
             case ScreenState::Exit:
-                runExit();
+                RunExit();
                 break;
         }
     }
 }
 
-void App::runGame() {
+void App::RunGame() {
     levelClock.restart();
     sf::Music gameMusic;
-    if (gameMusic.openFromFile("../assets/music/game.mp3")) {
-        gameMusic.setLoop(true);
-        gameMusic.setVolume(15.0f);
-        gameMusic.play();
-    } else {
-        std::cout << "ERROR: Failed to load game music" << std::endl;
-    }
-    sf::SoundBuffer dataPadBuffer;
-    sf::Sound dataPadSound;
-    if (dataPadBuffer.loadFromFile("../assets/music/data-pad.mp3")) {
-        dataPadSound.setBuffer(dataPadBuffer);
-        dataPadSound.setVolume(50.0f);
-    } else {
-        std::cout << "ERROR: Failed to load data-pad.mp3" << std::endl;
-    }
-
+    LoadMusicSafe(gameMusic, "../assets/music/game.mp3", 15.0f);
+    sf::Sound dataPadSound = LoadSoundSafe("../assets/music/data-pad.mp3", 50.0f);
     sf::Text voicePromptText;
     voicePromptText.setFont(menuFont);
     voicePromptText.setCharacterSize(18);
     voicePromptText.setFillColor(sf::Color::Green);
     voicePromptText.setString("Press Enter to Read");
-
     while (window.isOpen() && currentState == ScreenState::Game) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                currentState = ScreenState::Exit;
-            }
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
-                currentState = ScreenState::Pause;
-            }
-        }
-        const float dt = TIME_STEP;
-        player.Update(dt);
-        player.ResolveCollisions(level.map, dt);
-        hud.Update(player.hp);
-        if (player.hp <= 0) {
-            currentState = ScreenState::GameOver;
-        }
-        if (player.isFinished) {
-            currentState = ScreenState::GameWin;
-        }
-        sf::Vector2f targetCenter = player.sprite.getPosition();
-        float halfWidth = view.getSize().x / 2.0f;
-        float halfHeight = view.getSize().y / 2.0f;
-        float mapWidth = level.map.width * TILE_SIZE;
-        float mapHeight = level.map.height * TILE_SIZE;
-
-        float clampedX = (mapWidth >= view.getSize().x) ? std::clamp(targetCenter.x, halfWidth, mapWidth - halfWidth) : mapWidth / 2.0f;
-        float clampedY = (mapHeight >= view.getSize().y) ? std::clamp(targetCenter.y, halfHeight, mapHeight - halfHeight) : mapHeight / 2.0f;
-
-        view.setCenter(std::round(clampedX), std::round(clampedY));
-
-        window.clear(sf::Color::Black);
-        window.setView(view);
-        level.Draw(window);
-        player.Draw(window);
-
-        float elapsedTime = levelClock.getElapsedTime().asSeconds();
-        int totalSeconds = static_cast<int>(elapsedTime);
-        int minutes = totalSeconds / 60;
-        int seconds = totalSeconds % 60;
-
-        char timeBuffer[16];
-        if (minutes >= 100) {
-            std::snprintf(timeBuffer, sizeof(timeBuffer), "99:99");
-        } else {
-            std::snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d", minutes, seconds);
-        }
-
-        sf::Text worldClockText;
-        worldClockText.setFont(menuFont);
-        worldClockText.setCharacterSize(10);
-        worldClockText.setFillColor(sf::Color(255, 50, 40, 230));
-        worldClockText.setString(timeBuffer);
-
-        for (const auto& clockPos : level.map.clockPositions) {
-            float screenX = clockPos.x * TILE_SIZE + 11.f;
-            float screenY = clockPos.y * TILE_SIZE + 15.f;
-
-            worldClockText.setPosition(screenX, screenY);
-            window.draw(worldClockText);
-        }
-
-        if (player.IsNearVoice(level.map)) {
-            sf::Vector2f pPos = player.sprite.getPosition();
-            voicePromptText.setPosition(pPos.x - 45.0f, pPos.y - 75.0f);
-            window.draw(voicePromptText);
-
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
-                if (player.TryPickupVoice(level.map)) {
-                    std::cout << "Служебный рапорт успешно прочитан!" << std::endl;
-                    dataPadSound.play(); // Звук подбора дата-пада
-                }
-            }
-        }
-
-        hud.Draw(window);
-        window.display();
+        ProcessInput();
+        Update(TIME_STEP, &voicePromptText, &dataPadSound);
+        Draw(nullptr, &voicePromptText);
     }
 }
 
-void App::runMenu() {
-    sf::Texture bgTexture;
-    if (!bgTexture.loadFromFile(MENU_BG_PATH)) {
-        std::cout << "Failed to load main_menu.jpg" << std::endl;
-    }
-    sf::Sprite bgSprite(bgTexture);
-    bgSprite.setScale(
-        static_cast<float>(window.getSize().x) / bgTexture.getSize().x,
-        static_cast<float>(window.getSize().y) / bgTexture.getSize().y
-    );
-
-    // Фоновая музыка главного меню
+void App::RunMenu() {
+    sf::Texture bgTexture = LoadTextureSafe(MENU_BG_PATH);
+    sf::Sprite bgSprite = CreateScaledSprite(bgTexture);
     sf::Music menuMusic;
-    if (menuMusic.openFromFile("../assets/music/main_music.mp3")) {
-        menuMusic.setLoop(true);
-        menuMusic.play();
-    } else {
-        std::cout << "ERROR: Failed to load menu music" << std::endl;
-    }
-
-    sf::Texture buttonsSheet;
-    if (!buttonsSheet.loadFromFile(MENU_BUTTONS_PATH)) {
-        std::cout << "Failed to load menu_buttons.png" << std::endl;
-    }
-
+    LoadMusicSafe(menuMusic, "../assets/music/main_music.mp3", 100.0f);
+    sf::Texture buttonsSheet = LoadTextureSafe(MENU_BUTTONS_PATH);
     sf::Text tutorialText(L"Управление:\n< ^ v > - Движение\nЛКМ - Атака\nESC - Пауза", menuFont, 30);
     tutorialText.setFillColor(sf::Color(255, 255, 255, 200));
     tutorialText.setPosition(30.0f, window.getSize().y - 150.0f);
-
     float centerX = window.getSize().x / 2.0f - MENU_CENTER_OFFSET_X;
     float centerY = window.getSize().y / 2.0f;
-
-    sf::IntRect playIdleRect = MENU_PLAY_IDLE;
-    sf::IntRect playHoverRect = MENU_PLAY_HOVER;
-    sf::IntRect exitIdleRect = MENU_EXIT_IDLE;
-    sf::IntRect exitHoverRect = MENU_EXIT_HOVER;
-
-    Button playBtn(buttonsSheet, playIdleRect, playHoverRect, MENU_BTN_SIZE, {centerX, centerY - MENU_BTN_OFFSET_Y});
-    Button exitBtn(buttonsSheet, exitIdleRect, exitHoverRect, MENU_BTN_SIZE, {centerX, centerY + MENU_BTN_OFFSET_Y});
-
+    Button playBtn(buttonsSheet, MENU_PLAY_IDLE, MENU_PLAY_HOVER, MENU_BTN_SIZE,{centerX, centerY - MENU_BTN_OFFSET_Y});
+    Button exitBtn(buttonsSheet, MENU_EXIT_IDLE, MENU_EXIT_HOVER, MENU_BTN_SIZE, {centerX, centerY + MENU_BTN_OFFSET_Y});
     while (window.isOpen() && currentState == ScreenState::Menu) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                currentState = ScreenState::Exit;
-            }
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
-                currentState = ScreenState::Game;
-            }
-            if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left) {
-                if (playBtn.isClicked(window, event.mouseButton.x, event.mouseButton.y)) {
-                    currentState = ScreenState::Game;
-                }
-                if (exitBtn.isClicked(window, event.mouseButton.x, event.mouseButton.y)) {
-                    currentState = ScreenState::Exit;
-                }
-            }
-        }
-        playBtn.Update(window);
-        exitBtn.Update(window);
-        window.clear(MENU_BG_COLOR);
-        window.setView(window.getDefaultView());
-        window.draw(bgSprite);
-        window.draw(tutorialText);
-        playBtn.Draw(window);
-        exitBtn.Draw(window);
-        window.display();
+        ProcessInput(&playBtn, &exitBtn);
+        Update(TIME_STEP, nullptr, nullptr, &playBtn, &exitBtn);
+        Draw(&bgSprite, &tutorialText, nullptr, &playBtn, &exitBtn);
     }
 }
 
-void App::runPause() {
-    sf::Texture pauseButtonsSheet;
-    if (!pauseButtonsSheet.loadFromFile(PAUSE_BUTTONS_PATH)) {
-        std::cout << "Failed to load pause_buttons.png" << std::endl;
-    }
-    sf::Texture pausePanelTex;
-    if (!pausePanelTex.loadFromFile(PAUSE_PANEL_PATH)) {
-        std::cout << "Failed to load pause_panel.png" << std::endl;
-    }
+void App::RunPause() {
+    sf::Texture pauseButtonsSheet = LoadTextureSafe(PAUSE_BUTTONS_PATH);
+    sf::Texture pausePanelTex = LoadTextureSafe(PAUSE_PANEL_PATH);
+    player.StopSound();
+    sf::Music pauseMusic;
+    LoadMusicSafe(pauseMusic, "../assets/music/main_music.mp3", 15.0f);
     sf::Sprite pausePanel(pausePanelTex);
     sf::FloatRect panelBounds = pausePanel.getLocalBounds();
     pausePanel.setOrigin(panelBounds.width / 2.0f, panelBounds.height / 2.0f);
     pausePanel.setPosition(window.getSize().x / 2.0f, window.getSize().y / 2.0f);
     pausePanel.setScale(PAUSE_PANEL_SCALE, PAUSE_PANEL_SCALE);
-
-    sf::IntRect resumeIdleRect = PAUSE_RESUME_IDLE;
-    sf::IntRect resumeHoverRect = PAUSE_RESUME_HOVER;
-    sf::IntRect menuIdleRect = PAUSE_MENU_IDLE;
-    sf::IntRect menuHoverRect = PAUSE_MENU_HOVER;
-
     float centerX = window.getSize().x / 2.0f - PAUSE_CENTER_OFFSET_X;
     float centerY = window.getSize().y / 2.0f;
-
-    Button resumeBtn(pauseButtonsSheet, resumeIdleRect, resumeHoverRect, PAUSE_BTN_SIZE, {centerX, centerY - PAUSE_RESUME_OFFSET_Y});
-    Button menuBtn(pauseButtonsSheet, menuIdleRect, menuHoverRect, PAUSE_BTN_SIZE, {centerX, centerY + PAUSE_MENU_OFFSET_Y});
-
-    sf::RectangleShape darkOverlay(sf::Vector2f(window.getSize().x, window.getSize().y));
+    Button resumeBtn(pauseButtonsSheet, PAUSE_RESUME_IDLE, PAUSE_RESUME_HOVER, PAUSE_BTN_SIZE, {centerX, centerY - PAUSE_RESUME_OFFSET_Y});
+    Button menuBtn(pauseButtonsSheet, PAUSE_MENU_IDLE, PAUSE_MENU_HOVER, PAUSE_BTN_SIZE,{centerX, centerY + PAUSE_MENU_OFFSET_Y});
+    sf::RectangleShape darkOverlay(
+        sf::Vector2f(window.getSize().x, window.getSize().y)
+    );
     darkOverlay.setFillColor(PAUSE_OVERLAY_COLOR);
-
     while (window.isOpen() && currentState == ScreenState::Pause) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) currentState = ScreenState::Exit;
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
-                currentState = ScreenState::Game;
-            }
-            if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left) {
-                if (resumeBtn.isClicked(window, event.mouseButton.x, event.mouseButton.y)) {
-                    currentState = ScreenState::Game;
-                }
-                if (menuBtn.isClicked(window, event.mouseButton.x, event.mouseButton.y)) {
-                    currentState = ScreenState::Menu;
-                }
-            }
-        }
-        resumeBtn.Update(window);
-        menuBtn.Update(window);
-        window.clear();
-        window.setView(view);
-        level.Draw(window);
-        player.Draw(window);
-        hud.Draw(window);
-        window.setView(window.getDefaultView());
-        window.draw(darkOverlay);
-        window.draw(pausePanel);
-        resumeBtn.Draw(window);
-        menuBtn.Draw(window);
-        window.display();
+        ProcessInput(&resumeBtn, &menuBtn);
+        Update(TIME_STEP, nullptr, nullptr, &resumeBtn, &menuBtn);
+        Draw(&pausePanel, nullptr, &darkOverlay, &resumeBtn, &menuBtn);
     }
 }
 
-void App::runGameOver() {
-    sf::Texture loseTexture;
-    if (!loseTexture.loadFromFile("../assets/gameOver_screen.jpg")) {
-        std::cout << "Failed to load game_over_screen.jpg" << std::endl;
-    }
-    sf::Sprite loseSprite(loseTexture);
-    loseSprite.setScale(
-        static_cast<float>(window.getSize().x) / loseTexture.getSize().x,
-        static_cast<float>(window.getSize().y) / loseTexture.getSize().y
-    );
-
+void App::RunGameOver() {
+    sf::Texture loseTexture = LoadTextureSafe("../assets/gameOver_screen.jpg");
+    sf::Sprite loseSprite = CreateScaledSprite(loseTexture);
     sf::Music loseMusic;
-    if (loseMusic.openFromFile("../assets/music/death.mp3")) {
-        loseMusic.setVolume(50.0f);
-        loseMusic.play();
-    } else {
-        std::cout << "ERROR: Failed to load death music" << std::endl;
-    }
-
+    LoadMusicSafe(loseMusic, "../assets/music/death.mp3", 50.0f, false);
     while (window.isOpen() && currentState == ScreenState::GameOver) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                currentState = ScreenState::Exit;
-            }
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
-                player.Reset();
-                currentState = ScreenState::Game;
-            }
-        }
-        window.clear();
-        window.setView(window.getDefaultView());
-        window.draw(loseSprite);
-        window.display();
+        ProcessInput();
+        Update(TIME_STEP);
+        Draw(&loseSprite);
     }
 }
 
-void App::runGameWin() {
-    sf::Texture winTexture;
-    if (!winTexture.loadFromFile("../assets/win_screen.jpg")) {
-        std::cout << "Failed to load victory_screen.jpg" << std::endl;
-    }
-    sf::Sprite winSprite(winTexture);
-    winSprite.setScale(
-        static_cast<float>(window.getSize().x) / winTexture.getSize().x,
-        static_cast<float>(window.getSize().y) / winTexture.getSize().y
-    );
-
+void App::RunGameWin() {
+    sf::Texture winTexture = LoadTextureSafe("../assets/win_screen.jpg");
+    sf::Sprite winSprite = CreateScaledSprite(winTexture);
     sf::Music winMusic;
-    if (winMusic.openFromFile("../assets/music/win.mp3")) {
-        winMusic.setVolume(50.0f);
-        winMusic.play();
-    } else {
-        std::cout << "ERROR: Failed to load win music" << std::endl;
-    }
-
+    LoadMusicSafe(winMusic, "../assets/music/win.mp3", 50.0f, false);
     while (window.isOpen() && currentState == ScreenState::GameWin) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                currentState = ScreenState::Exit;
-            }
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
-                player.Reset();
-                currentState = ScreenState::Game;
-            }
-        }
-        window.clear();
-        window.setView(window.getDefaultView());
-        window.draw(winSprite);
-        window.display();
+        ProcessInput();
+        Update(TIME_STEP);
+        Draw(&winSprite);
     }
 }
 
-void App::runExit() {
+void App::RunExit() {
     window.close();
+}
+
+void App::ProcessInput(Button* btn1, Button* btn2) {
+    sf::Event event;
+    while (window.pollEvent(event)) {
+        if (event.type == sf::Event::Closed) {
+            currentState = ScreenState::Exit;
+            return;
+        }
+        if (event.type == sf::Event::KeyPressed) {
+            switch (event.key.code) {
+                case sf::Keyboard::Escape:
+                    if (currentState == ScreenState::Game) currentState = ScreenState::Pause;
+                    else if (currentState == ScreenState::Pause) currentState = ScreenState::Game;
+                    break;
+                case sf::Keyboard::Enter:
+                    if (currentState == ScreenState::Menu) currentState = ScreenState::Game;
+                    else if (currentState == ScreenState::GameOver || currentState == ScreenState::GameWin) {
+                        player.Reset();
+                        currentState = ScreenState::Game;
+                    }
+                    break;
+            }
+        }
+        if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left) {
+            if (btn1 && btn1->isClicked(window, event.mouseButton.x, event.mouseButton.y) && (currentState == ScreenState::Menu || currentState == ScreenState::Pause)) {
+                currentState = ScreenState::Game;
+                }
+            if (btn2 && btn2->isClicked(window, event.mouseButton.x, event.mouseButton.y)) {
+                if (currentState == ScreenState::Menu) currentState = ScreenState::Exit;
+                else if (currentState == ScreenState::Pause) currentState = ScreenState::Menu;
+                }
+            }
+    }
+    if (currentState == ScreenState::Game)
+        isEnterPressedForVoice = sf::Keyboard::isKeyPressed(sf::Keyboard::Enter);
+}
+
+void App::Update(float dt, sf::Text* voicePromptText, sf::Sound* dataPadSound, Button* btn1, Button* btn2) {
+    switch (currentState) {
+        case ScreenState::Menu:
+        case ScreenState::Pause:
+            if (btn1) btn1->Update(window);
+            if (btn2) btn2->Update(window);
+            break;
+        case ScreenState::Game:
+            player.Update(dt);
+            player.ResolveCollisions(level.map, dt);
+            if (player.hp <= 0) {
+                currentState = ScreenState::GameOver;
+                break;
+            }
+            if (player.isFinished) {
+                currentState = ScreenState::GameWin;
+                break;
+            }
+            hud.Update(player.hp);
+            UpdateCamera();
+            showVoicePrompt = player.IsNearVoice(level.map);
+            if (showVoicePrompt && voicePromptText) {
+                sf::Vector2f pPos = player.sprite.getPosition();
+                voicePromptText->setPosition(pPos.x - 45.0f, pPos.y - 75.0f);
+                if (isEnterPressedForVoice &&
+                    player.TryPickupVoice(level.map)) {
+                    std::cout << "Служебный рапорт успешно прочитан!" << std::endl;
+                    if (dataPadSound) {
+                        dataPadSound->play();
+                    }
+                }
+            }
+            break;
+        case ScreenState::GameOver:
+        case ScreenState::GameWin:
+        case ScreenState::Exit:
+            break;
+    }
+}
+
+void App::Draw(sf::Sprite* bgOrEndSprite, sf::Text* textObj, sf::RectangleShape* overlay, Button* btn1, Button* btn2) {
+    if (currentState == ScreenState::Exit) return;
+    window.clear(currentState == ScreenState::Menu ? MENU_BG_COLOR : currentState == ScreenState::Game ? sf::Color::Black : sf::Color::Black);
+    window.setView(currentState == ScreenState::Game || currentState == ScreenState::Pause ? view : window.getDefaultView());
+    switch (currentState) {
+        case ScreenState::Menu:
+            if (bgOrEndSprite) window.draw(*bgOrEndSprite);
+            if (textObj) window.draw(*textObj);
+            break;
+        case ScreenState::Game:
+        case ScreenState::Pause:
+            level.Draw(window);
+            player.Draw(window);
+            if (currentState == ScreenState::Game) {
+                DrawWorldClocks();
+                if (showVoicePrompt && textObj) window.draw(*textObj);
+            }
+            hud.Draw(window);
+            break;
+        case ScreenState::GameOver:
+        case ScreenState::GameWin:
+            if (bgOrEndSprite) window.draw(*bgOrEndSprite);
+            break;
+        default:
+            break;
+    }
+    if (currentState == ScreenState::Pause) {
+        window.setView(window.getDefaultView());
+        if (overlay) window.draw(*overlay);
+        if (bgOrEndSprite) window.draw(*bgOrEndSprite);
+    }
+    if (currentState == ScreenState::Menu || currentState == ScreenState::Pause) {
+        if (btn1) btn1->Draw(window);
+        if (btn2) btn2->Draw(window);
+    }
+    window.display();
+}
+
+void App::UpdateCamera() {
+    sf::Vector2f targetCenter = player.sprite.getPosition();
+    float halfWidth = view.getSize().x / 2.0f;
+    float halfHeight = view.getSize().y / 2.0f;
+    float mapWidth = level.map.width * TILE_SIZE;
+    float mapHeight = level.map.height * TILE_SIZE;
+    float clampedX = (mapWidth >= view.getSize().x)
+        ? std::clamp(targetCenter.x, halfWidth, mapWidth - halfWidth)
+        : mapWidth / 2.0f;
+    float clampedY = (mapHeight >= view.getSize().y)
+        ? std::clamp(targetCenter.y, halfHeight, mapHeight - halfHeight)
+        : mapHeight / 2.0f;
+    view.setCenter(std::round(clampedX), std::round(clampedY));
+}
+
+void App::DrawWorldClocks() {
+    float elapsedTime = levelClock.getElapsedTime().asSeconds();
+    int totalSeconds = static_cast<int>(elapsedTime);
+    int minutes = totalSeconds / 60;
+    int seconds = totalSeconds % 60;
+    char timeBuffer[16];
+    if (minutes >= 100) {
+        std::snprintf(timeBuffer, sizeof(timeBuffer), "99:99");
+    } else {
+        std::snprintf(timeBuffer, sizeof(timeBuffer), "%02d:%02d", minutes, seconds);
+    }
+    sf::Text worldClockText;
+    worldClockText.setFont(menuFont);
+    worldClockText.setCharacterSize(10);
+    worldClockText.setFillColor(sf::Color(255, 50, 40, 230));
+    worldClockText.setString(timeBuffer);
+    for (const auto& clockPos : level.map.clockPositions) {
+        float screenX = clockPos.x * TILE_SIZE + 11.f;
+        float screenY = clockPos.y * TILE_SIZE + 15.f;
+        worldClockText.setPosition(screenX, screenY);
+        window.draw(worldClockText);
+    }
+}
+
+sf::Texture App::LoadTextureSafe(const std::string& path) {
+    sf::Texture texture;
+    if (!texture.loadFromFile(path)) {
+        std::cout << "ERROR: Failed to load texture: " << path << std::endl;
+    }
+    return texture;
+}
+
+bool App::LoadMusicSafe(sf::Music& music, const std::string& path, float volume, bool loop) {
+    if (music.openFromFile(path)) {
+        music.setLoop(loop);
+        music.setVolume(volume);
+        music.play();
+        return true;
+    }
+    std::cout << "ERROR: Failed to load music: " << path << std::endl;
+    return false;
+}
+
+sf::Sound App::LoadSoundSafe(const std::string& path, float volume) {
+    sf::Sound sound;
+    static sf::SoundBuffer buffer;
+    if (buffer.loadFromFile(path)) {
+        sound.setBuffer(buffer);
+        sound.setVolume(volume);
+    } else {
+        std::cout << "ERROR: Failed to load sound: " << path << std::endl;
+    }
+    return sound;
+}
+
+sf::Sprite App::CreateScaledSprite(const sf::Texture& texture) {
+    sf::Sprite sprite(texture);
+    if (texture.getSize().x == 0 || texture.getSize().y == 0) {
+        return sprite;
+    }
+    sprite.setScale(
+        static_cast<float>(window.getSize().x) / texture.getSize().x,
+        static_cast<float>(window.getSize().y) / texture.getSize().y
+    );
+    return sprite;
 }

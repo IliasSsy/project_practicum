@@ -28,6 +28,7 @@ struct Player {
     void HandleHorizontalMovement(float dt);
     void HandleVerticalMovement(float dt, bool jumpPressed);
     void ResolveCollisions(const Map& map, float dt);
+    void StopSound();
     bool IsNearVoice(const Map& map) const;
     bool TryPickupVoice(Map& map);
     void Update(float dt);

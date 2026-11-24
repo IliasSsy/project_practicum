@@ -8,7 +8,7 @@ Game::Game() {
         static_cast<float>(window.getSize().x),
         static_cast<float>(window.getSize().y)
     );
-    view.zoom(0.9f);
+    view.zoom(0.4f);
     view.setCenter(
         window.getSize().x / 2.0f,
         window.getSize().y / 2.0f

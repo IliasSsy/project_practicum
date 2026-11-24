@@ -35,10 +35,8 @@ struct Button {
     bool isClicked(sf::RenderWindow& window, int eventX, int eventY) {
         sf::Vector2f clickPos = window.mapPixelToCoords(sf::Vector2i(eventX, eventY));
         sf::FloatRect bounds = sprite.getGlobalBounds();
-
         bounds.left += 10.f; bounds.top += 10.f;
         bounds.width -= 20.f; bounds.height -= 20.f;
-
         return bounds.contains(clickPos);
     }
 

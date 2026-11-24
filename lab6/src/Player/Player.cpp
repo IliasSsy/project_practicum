@@ -461,14 +461,12 @@ bool Player::IsNearVoice(const Map& map) const {
 bool Player::TryPickupVoice(Map& map) {
     sf::Vector2f pos = sprite.getPosition();
     sf::Vector2f size = GetPlayerSize(sprite);
-
     sf::FloatRect box(
         pos.x - size.x / 2.0f - 15.0f,
         pos.y - size.y / 2.0f - 15.0f,
         size.x + 30.0f,
         size.y + 30.0f
     );
-
     GridRange range = GetGridRange(box, map);
     for (int row = range.startRow; row <= range.endRow; ++row) {
         for (int col = range.startCol; col <= range.endCol; ++col) {
@@ -505,6 +503,12 @@ void Player::Reset() {
     sprite.setTextureRect(idleRects[0]);
     sprite.setOrigin(idleRects[0].width / 2.0f, idleRects[0].height - (PLAYER_HEIGHT / 2.0f / PLAYER_SCALE));
     sprite.setScale(PLAYER_SCALE, PLAYER_SCALE);
+}
+
+void Player::StopSound() {
+    runSound.stop();
+    fallSound.stop();
+    brakeSound.stop();
 }
 
 void Player::Draw(sf::RenderWindow& window) {
