@@ -11,7 +11,7 @@ constexpr float GRAVITY = 980.0f;
 constexpr float JUMP_FORCE = -550.0f;
 constexpr float WALL_SLIDE_SPEED = 80.0f;
 constexpr float WALL_JUMP_FORCE_X = 400.0f;
-constexpr float PLAYER_SCALE = 0.6f;
+constexpr float PLAYER_SCALE = 0.3f;
 constexpr float PLAYER_WIDTH = 32.0f;
 constexpr float PLAYER_HEIGHT = 90.0f;
 constexpr float RUN_START_SPEED = 35.0f;
@@ -36,32 +36,32 @@ Player::Player(sf::Vector2f startPos)
     sprite.setScale(PLAYER_SCALE, PLAYER_SCALE);
 
     idleRects = {
-        {70, 25, 75, 157},
-        {222, 25, 75, 157},
-        {374, 25, 75, 157},
-        {528, 25, 75, 157}
+        {129, 44, 140, 293},
+        {415, 44, 140, 293},
+        {701, 44, 140, 293},
+        {986, 44, 140, 293}
     };
 
     runRects = {
-        {58, 205, 108, 149},
-        {214, 206, 106, 148},
-        {368, 207, 103, 147},
-        {517, 206, 107, 147},
-        {669, 204, 107, 152},
-        {817, 205, 110, 150}
+        {109, 386, 204, 276},
+        {406, 381, 159, 287},
+        {691, 390, 202, 275},
+        {969, 387, 200, 283},
+        {1255, 384, 203, 283},
+        {1535, 385, 203, 283}
     };
 
     jumpRects = {
-        {73, 377, 77, 160},
-        {216, 361, 85, 162},
-        {373, 383, 103, 147},
-        {532, 398, 118, 140}
+        {136, 710, 145, 300},
+        {405, 679, 162, 304},
+        {699, 721, 192, 276},
+        {998, 749, 220, 262}
     };
 
     wallSlideRects = {
-        {794, 384, 96, 150},
-        {961, 388, 100, 149},
-        {1130, 388, 100, 147},
+        {1488, 722, 184, 276},
+        {1804, 731, 183, 276},
+        {2120, 732, 183, 276},
     };
 
     sprite.setTextureRect(idleRects[0]);

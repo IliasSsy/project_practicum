@@ -45,6 +45,7 @@ struct App {
 
     void UpdateCamera();
     void DrawWorldClocks();
+    void DrawPlayerLight();
     void ProcessInput(Button* btn1 = nullptr, Button* btn2 = nullptr);
     void Update(float dt, sf::Text* voicePromptText = nullptr, sf::Sound* dataPadSound = nullptr, Button* btn1 = nullptr, Button* btn2 = nullptr);
     void Draw(sf::Sprite* bgOrEndSprite = nullptr, sf::Text* textObj = nullptr, sf::RectangleShape* overlay = nullptr, Button* btn1 = nullptr, Button* btn2 = nullptr);

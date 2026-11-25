@@ -4,12 +4,16 @@
 #include <iostream>
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/Color.hpp>
-#include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 const std::string FONT_PATH = "/System/Library/Fonts/Helvetica.ttc";
 const unsigned int FRAMERATE = 60;
-const float ZOOM_LEVEL = 0.9f;
+const float ZOOM_LEVEL = 0.55f;
+const float CAMERA_SMOOTH = 8.0f;
+const float LIGHT_INNER_RADIUS = 110.0f;
+const float LIGHT_OUTER_RADIUS = 320.0f;
+const sf::Uint8 LIGHT_DARKNESS = 248;
 const float TIME_STEP = 1.0f / 60.0f;
 
 const std::string MENU_BG_PATH = "../assets/main_menu.jpg";
@@ -46,7 +50,7 @@ App::App() {
         static_cast<float>(window.getSize().y)
     );
     view.zoom(ZOOM_LEVEL);
-    view.setCenter(window.getSize().x / 2.0f, window.getSize().y / 2.0f);
+    view.setCenter(player.sprite.getPosition());
 }
 
 void App::Run() {
@@ -76,6 +80,7 @@ void App::Run() {
 
 void App::RunGame() {
     levelClock.restart();
+    view.setCenter(player.sprite.getPosition());
     sf::Music gameMusic;
     LoadMusicSafe(gameMusic, "../assets/music/game.mp3", 15.0f);
     sf::Sound dataPadSound = LoadSoundSafe("../assets/music/data-pad.mp3", 50.0f);
@@ -102,7 +107,7 @@ void App::RunMenu() {
     tutorialText.setPosition(30.0f, window.getSize().y - 150.0f);
     float centerX = window.getSize().x / 2.0f - MENU_CENTER_OFFSET_X;
     float centerY = window.getSize().y / 2.0f;
-    Button playBtn(buttonsSheet, MENU_PLAY_IDLE, MENU_PLAY_HOVER, MENU_BTN_SIZE,{centerX, centerY - MENU_BTN_OFFSET_Y});
+    Button playBtn(buttonsSheet, MENU_PLAY_IDLE, MENU_PLAY_HOVER, MENU_BTN_SIZE, {centerX, centerY - MENU_BTN_OFFSET_Y});
     Button exitBtn(buttonsSheet, MENU_EXIT_IDLE, MENU_EXIT_HOVER, MENU_BTN_SIZE, {centerX, centerY + MENU_BTN_OFFSET_Y});
     while (window.isOpen() && currentState == ScreenState::Menu) {
         ProcessInput(&playBtn, &exitBtn);
@@ -125,7 +130,7 @@ void App::RunPause() {
     float centerX = window.getSize().x / 2.0f - PAUSE_CENTER_OFFSET_X;
     float centerY = window.getSize().y / 2.0f;
     Button resumeBtn(pauseButtonsSheet, PAUSE_RESUME_IDLE, PAUSE_RESUME_HOVER, PAUSE_BTN_SIZE, {centerX, centerY - PAUSE_RESUME_OFFSET_Y});
-    Button menuBtn(pauseButtonsSheet, PAUSE_MENU_IDLE, PAUSE_MENU_HOVER, PAUSE_BTN_SIZE,{centerX, centerY + PAUSE_MENU_OFFSET_Y});
+    Button menuBtn(pauseButtonsSheet, PAUSE_MENU_IDLE, PAUSE_MENU_HOVER, PAUSE_BTN_SIZE, {centerX, centerY + PAUSE_MENU_OFFSET_Y});
     sf::RectangleShape darkOverlay(
         sf::Vector2f(window.getSize().x, window.getSize().y)
     );
@@ -185,17 +190,19 @@ void App::ProcessInput(Button* btn1, Button* btn2) {
                         currentState = ScreenState::Game;
                     }
                     break;
+                default:
+                    break;
             }
         }
         if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left) {
             if (btn1 && btn1->isClicked(window, event.mouseButton.x, event.mouseButton.y) && (currentState == ScreenState::Menu || currentState == ScreenState::Pause)) {
                 currentState = ScreenState::Game;
-                }
+            }
             if (btn2 && btn2->isClicked(window, event.mouseButton.x, event.mouseButton.y)) {
                 if (currentState == ScreenState::Menu) currentState = ScreenState::Exit;
                 else if (currentState == ScreenState::Pause) currentState = ScreenState::Menu;
-                }
             }
+        }
     }
     if (currentState == ScreenState::Game)
         isEnterPressedForVoice = sf::Keyboard::isKeyPressed(sf::Keyboard::Enter);
@@ -243,7 +250,7 @@ void App::Update(float dt, sf::Text* voicePromptText, sf::Sound* dataPadSound, B
 
 void App::Draw(sf::Sprite* bgOrEndSprite, sf::Text* textObj, sf::RectangleShape* overlay, Button* btn1, Button* btn2) {
     if (currentState == ScreenState::Exit) return;
-    window.clear(currentState == ScreenState::Menu ? MENU_BG_COLOR : currentState == ScreenState::Game ? sf::Color::Black : sf::Color::Black);
+    window.clear(currentState == ScreenState::Menu ? MENU_BG_COLOR : sf::Color::Black);
     window.setView(currentState == ScreenState::Game || currentState == ScreenState::Pause ? view : window.getDefaultView());
     switch (currentState) {
         case ScreenState::Menu:
@@ -256,7 +263,10 @@ void App::Draw(sf::Sprite* bgOrEndSprite, sf::Text* textObj, sf::RectangleShape*
             player.Draw(window);
             if (currentState == ScreenState::Game) {
                 DrawWorldClocks();
-                if (showVoicePrompt && textObj) window.draw(*textObj);
+            }
+            DrawPlayerLight();
+            if (currentState == ScreenState::Game && showVoicePrompt && textObj) {
+                window.draw(*textObj);
             }
             hud.Draw(window);
             break;
@@ -281,17 +291,39 @@ void App::Draw(sf::Sprite* bgOrEndSprite, sf::Text* textObj, sf::RectangleShape*
 
 void App::UpdateCamera() {
     sf::Vector2f targetCenter = player.sprite.getPosition();
-    float halfWidth = view.getSize().x / 2.0f;
-    float halfHeight = view.getSize().y / 2.0f;
-    float mapWidth = level.map.width * TILE_SIZE;
-    float mapHeight = level.map.height * TILE_SIZE;
-    float clampedX = (mapWidth >= view.getSize().x)
-        ? std::clamp(targetCenter.x, halfWidth, mapWidth - halfWidth)
-        : mapWidth / 2.0f;
-    float clampedY = (mapHeight >= view.getSize().y)
-        ? std::clamp(targetCenter.y, halfHeight, mapHeight - halfHeight)
-        : mapHeight / 2.0f;
-    view.setCenter(std::round(clampedX), std::round(clampedY));
+    sf::Vector2f currentCenter = view.getCenter();
+    sf::Vector2f newCenter = currentCenter + (targetCenter - currentCenter) * CAMERA_SMOOTH * TIME_STEP;
+    view.setCenter(newCenter);
+}
+
+void App::DrawPlayerLight() {
+    sf::Vector2f center = player.sprite.getPosition();
+    const int segments = 64;
+    const float pi = 3.14159265f;
+    const float maxExtent = 5000.0f;
+    sf::VertexArray lightGradient(sf::TriangleStrip, (segments + 1) * 2);
+    for (int i = 0; i <= segments; ++i) {
+        float angle = (static_cast<float>(i) / segments) * 2.0f * pi;
+        float cosA = std::cos(angle);
+        float sinA = std::sin(angle);
+        lightGradient[i * 2].position = {center.x + cosA * LIGHT_INNER_RADIUS, center.y + sinA * LIGHT_INNER_RADIUS};
+        lightGradient[i * 2].color = sf::Color(0, 0, 0, 0);
+        lightGradient[i * 2 + 1].position = {center.x + cosA * LIGHT_OUTER_RADIUS, center.y + sinA * LIGHT_OUTER_RADIUS};
+        lightGradient[i * 2 + 1].color = sf::Color(0, 0, 0, LIGHT_DARKNESS);
+    }
+    sf::VertexArray outerDarkness(sf::TriangleStrip, (segments + 1) * 2);
+    for (int i = 0; i <= segments; ++i) {
+        float angle = (static_cast<float>(i) / segments) * 2.0f * pi;
+        float cosA = std::cos(angle);
+        float sinA = std::sin(angle);
+        outerDarkness[i * 2].position = {center.x + cosA * LIGHT_OUTER_RADIUS, center.y + sinA * LIGHT_OUTER_RADIUS};
+        outerDarkness[i * 2].color = sf::Color(0, 0, 0, LIGHT_DARKNESS);
+        outerDarkness[i * 2 + 1].position = {center.x + cosA * maxExtent, center.y + sinA * maxExtent};
+        outerDarkness[i * 2 + 1].color = sf::Color(0, 0, 0, LIGHT_DARKNESS);
+    }
+
+    window.draw(lightGradient);
+    window.draw(outerDarkness);
 }
 
 void App::DrawWorldClocks() {
