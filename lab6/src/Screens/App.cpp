@@ -41,6 +41,7 @@ const float PAUSE_MENU_OFFSET_Y = 70.0f;
 const sf::Color PAUSE_OVERLAY_COLOR(0, 0, 0, 160);
 
 App::App() {
+    level.Init();
     if (!menuFont.loadFromFile(FONT_PATH)) {
         std::cout << "Failed to load system font" << std::endl;
     }
@@ -218,6 +219,7 @@ void App::Update(float dt, sf::Text* voicePromptText, sf::Sound* dataPadSound, B
         case ScreenState::Game:
             player.Update(dt);
             player.ResolveCollisions(level.map, dt);
+            level.Update(dt, player.sprite.getPosition());
             if (player.hp <= 0) {
                 currentState = ScreenState::GameOver;
                 break;

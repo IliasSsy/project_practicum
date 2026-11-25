@@ -17,6 +17,9 @@ add_executable(game
         src/UI/Hud/Hud.h
         src/Screens/App.cpp
         src/UI/Hud/Hud.cpp
+        src/Enemies/enemy.h
+        src/Enemies/Soldier/Soldier.cpp
+        src/Enemies/Enemy.cpp
 )
 
 target_include_directories(game PRIVATE
